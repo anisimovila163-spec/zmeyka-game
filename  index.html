@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101510">
+<title>ZMEYKA</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+ --bg:#101510;--panel:#1b281d;--text:#eaffeb;
+ --muted:#829486;--accent:#65ed72;
+ --board:#0b140d;--grid:#19271c;
+ --border:#3b5940;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--text);
+ font-family:monospace;image-rendering:pixelated;
+ user-select:none;overflow-x:hidden;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{max-width:500px;margin:auto;padding:20px 16px 30px;min-height:100dvh}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.logo{font-size:25px;font-weight:1000;letter-spacing:3px}
+.logo span{color:var(--accent)}
+.icon{
+ width:25px;height:25px;display:inline-block;
+ vertical-align:middle;fill:none;stroke:currentColor;
+ stroke-width:2;stroke-linecap:square;
+}
+.iconbtn{
+ background:var(--panel);border:2px solid var(--border);
+ padding:9px;image-rendering:pixelated;
+}
+.screen{display:none}
+.screen.active{display:block;animation:show .18s steps(3)}
+@keyframes show{from{opacity:0}to{opacity:1}}
+.hero{text-align:center;padding:30px 5px}
+.hero h1{font-size:35px;letter-spacing:2px;margin:15px 0 8px}
+.subtitle{font-size:12px;color:var(--muted);line-height:1.7}
+.pixel-art{
+ width:128px;height:128px;margin:auto;
+ image-rendering:pixelated;display:block;
+}
+.card{
+ background:var(--panel);border:2px solid var(--border);
+ padding:17px;margin-bottom:14px;
+ box-shadow:4px 4px 0 #0005;
+}
+.heading{font-size:15px;font-weight:bold;margin-bottom:15px}
+.btn{
+ width:100%;padding:17px 10px;margin-top:11px;
+ border:2px solid var(--accent);
+ background:var(--accent);color:#071409;
+ font-weight:1000;letter-spacing:1px;
+ box-shadow:4px 4px 0 #0008;
+}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #000}
+.btn.secondary{
+ background:var(--panel);color:var(--text);
+ border-color:var(--border);
+}
+.stats{display:flex;justify-content:space-around;text-align:center}
+.stat strong{display:block;font-size:27px;color:var(--accent)}
+.stat span{font-size:10px;color:var(--muted)}
+.colors{display:flex;gap:12px;flex-wrap:wrap}
+.color{
+ width:36px;height:36px;border:3px solid #000;
+ outline:2px solid transparent;
+}
+.color.selected{outline:2px solid var(--text)}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.theme{
+ background:var(--bg);border:2px solid var(--border);
+ padding:12px 3px;font-size:11px;
+}
+.theme.selected{border-color:var(--accent);color:var(--accent)}
+.theme-icon{display:block;font-size:24px;margin-bottom:8px}
+select{
+ width:100%;padding:13px;background:var(--bg);
+ color:var(--text);border:2px solid var(--border);
+ font-family:monospace;
+}
+#board{
+ display:block;width:100%;aspect-ratio:1;
+ background:var(--board);border:3px solid var(--border);
+ image-rendering:pixelated;touch-action:none;
+}
+.game-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.game-top strong{font-size:27px;color:var(--accent)}
+.game-actions{display:flex;gap:8px}
+.game-actions button{
+ background:var(--panel);border:2px solid var(--border);
+ padding:10px 13px;
+}
+.dpad{
+ display:grid;grid-template-columns:repeat(3,65px);
+ grid-template-rows:repeat(2,50px);
+ justify-content:center;gap:7px;margin:20px auto;
+}
+.dpad button{
+ background:var(--panel);border:2px solid var(--border);
+ font-size:20px;font-weight:bold;touch-action:manipulation;
+}
+.dpad button:active{background:var(--accent);color:#000}
+.up{grid-column:2}
+.left{grid-column:1;grid-row:2}
+.down{grid-column:2;grid-row:2}
+.right{grid-column:3;grid-row:2}
+.small{font-size:10px;color:var(--muted)}
+.overlay{
+ position:fixed;inset:0;background:#000c;
+ display:none;align-items:center;justify-content:center;
+ padding:20px;z-index:10;
+}
+.overlay.show{display:flex}
+.modal{
+ width:100%;max-width:350px;background:var(--panel);
+ border:3px solid var(--accent);padding:25px;
+ box-shadow:7px 7px 0 #000;
+ text-align:center;
+}
+.modal h2{font-size:25px}
+.modal p{font-size:12px;color:var(--muted)}
+footer{text-align:center;font-size:10px;color:var(--muted);margin-top:30px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+ <div class="logo">ZMEYKA<span>.</span></div>
+ <button class="iconbtn" onclick="showScreen('settings')" aria-label="Настройки">
+  <svg class="icon" viewBox="0 0 24 24">
+   <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/>
+   <circle cx="12" cy="12" r="5"/>
+  </svg>
+ </button>
+</header>
+
+<section id="home" class="screen active">
+ <div class="hero">
+  <canvas id="logoArt" class="pixel-art" width="32" height="32"></canvas>
+  <h1>SNAKE GAME</h1>
+  <div class="subtitle">CLASSIC PIXEL ARCADE</div>
+ </div>
+
+ <div class="card stats">
+  <div class="stat"><strong id="bestHome">0</strong><span>BEST SCORE</span></div>
+  <div class="stat"><strong>01</strong><span>GAME MODE</span></div>
+ </div>
+
+ <button class="btn" onclick="startGame()">START GAME</button>
+ <button class="btn secondary" onclick="showScreen('settings')">SETTINGS</button>
+ <footer>ZMEYKA ARCADE SYSTEM / VERSION 1.0</footer>
+</section>
+
+<section id="settings" class="screen">
+ <h2>SETTINGS</h2>
+ <div class="card">
+  <div class="heading">SNAKE COLOR</div>
+  <div class="colors" id="colors"></div>
+ </div>
+ <div class="card">
+  <div class="heading">INTERFACE THEME</div>
+  <div class="themes">
+   <button class="theme" data-theme="dark" onclick="setTheme('dark')"><span class="theme-icon">■</span>DARK</button>
+   <button class="theme" data-theme="light" onclick="setTheme('light')"><span class="theme-icon">□</span>LIGHT</button>
+   <button class="theme" data-theme="neon" onclick="setTheme('neon')"><span class="theme-icon">◆</span>NEON</button>
+  </div>
+ </div>
+ <div class="card">
+  <div class="heading">GAME SPEED</div>
+  <select id="speed" onchange="saveSettings()">
+   <option value="150">NORMAL</option>
+   <option value="110">FAST</option>
+   <option value="80">EXTREME</option>
+  </select>
+ </div>
+ <button class="btn" onclick="showScreen('home')">SAVE SETTINGS</button>
+</section>
+
+<section id="game" class="screen">
+ <div class="game-top">
+  <div>
+   <div class="small">SCORE</div>
+   <strong id="score">0</strong>
+  </div>
+  <div class="game-actions">
+   <button onclick="pauseGame()" aria-label="Пауза">Ⅱ</button>
+   <button onclick="closeGame()" aria-label="В меню">⌂</button>
+  </div>
+ </div>
+
+ <canvas id="board" width="400" height="400"></canvas>
+
+ <div class="stats card" style="margin-top:15px">
+  <div class="stat"><strong id="gameBest">0</strong><span>RECORD</span></div>
+  <div class="stat"><strong id="level">1</strong><span>LEVEL</span></div>
+ </div>
+
+ <div class="dpad">
+  <button class="up" onclick="turn(0,-1)">▲</button>
+  <button class="left" onclick="turn(-1,0)">◀</button>
+  <button class="down" onclick="turn(0,1)">▼</button>
+  <button class="right" onclick="turn(1,0)">▶</button>
+ </div>
+ <div class="small" style="text-align:center">USE BUTTONS OR SWIPE TO MOVE</div>
+</section>
+
+<div class="overlay" id="overlay">
+ <div class="modal">
+  <h2 id="modalTitle">PAUSED</h2>
+  <p id="modalText">GAME PAUSED</p>
+  <button class="btn" id="modalMain" onclick="resumeGame()">CONTINUE</button>
+  <button class="btn secondary" onclick="restartGame()">RESTART</button>
+  <button class="btn secondary" onclick="closeGame()">MAIN MENU</button>
+ </div>
+</div>
+
+</div>
+
+<script>
+const tg=window.Telegram?.WebApp;
+tg?.ready();tg?.expand();
+
+const palettes=['#65ed72','#38b8ff','#ffcc45','#ff5577','#bb75ff','#ffffff','#ff914d','#35dfc3'];
+let snakeColor=localStorage.snakeColor||palettes[0];
+let theme=localStorage.snakeTheme||'dark';
+let best=Number(localStorage.snakeBest)||0;
+let speed=Number(localStorage.snakeSpeed)||150;
+
+const themes={
+ dark:{bg:'#101510',panel:'#1b281d',text:'#eaffeb',muted:'#829486',accent:'#65ed72',board:'#0b140d',grid:'#19271c',border:'#3b5940'},
+ light:{bg:'#edf2e9',panel:'#fff',text:'#17251a',muted:'#6f8071',accent:'#36a85b',board:'#e2eddf',grid:'#cbdac8',border:'#91ad91'},
+ neon:{bg:'#100b1c',panel:'#211432',text:'#f5eaff',muted:'#b19bc7',accent:'#dc65ff',board:'#170d24',grid:'#342044',border:'#68418b'}
+};
+
+function applyTheme(){
+ const t=themes[theme];
+ Object.entries(t).forEach(([k,v])=>document.documentElement.style.setProperty('--'+k,v));
+ document.querySelectorAll('.theme').forEach(b=>b.classList.toggle('selected',b.dataset.theme===theme));
+}
+function setTheme(t){theme=t;localStorage.snakeTheme=t;applyTheme()}
+function renderColors(){
+ const box=document.getElementById('colors');
+ box.innerHTML='';
+ palettes.forEach(c=>{
+  const b=document.createElement('button');
+  b.className='color'+(c===snakeColor?' selected':'');
+  b.style.background=c;
+  b.onclick=()=>{snakeColor=c;localStorage.snakeColor=c;renderColors()};
+  box.appendChild(b);
+ });
+}
+function saveSettings(){
+ speed=Number(document.getElementById('speed').value);
+ localStorage.snakeSpeed=speed;
+}
+function showScreen(id){
+ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ if(id==='game')draw();
+}
+function updateBest(){
+ document.getElementById('bestHome').textContent=best;
+ document.getElementById('gameBest').textContent=best;
+}
+
+applyTheme();renderColors();
+document.getElementById('speed').value=speed;
+updateBest();
+
+function drawLogo(){
+ const c=document.getElementById('logoArt').getContext('2d');
+ c.imageSmoothingEnabled=false;
+ c.fillStyle='#101510';c.fillRect(0,0,32,32);
+ const blocks=[[4,16],[8,16],[12,16],[12,12],[12,8],[16,8],[20,8],[20,12]];
+ blocks.forEach(([x,y],i)=>{
+  c.fillStyle=snakeColor;c.fillRect(x,y,4,4);
+ });
+ c.fillStyle='#ffffff';c.fillRect(21,9,1,1);
+ c.fillStyle='#ffcc45';c.fillRect(23,20,4,4);
+}
+drawLogo();
+
+const canvas=document.getElementById('board');
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const N=20,CELL=20;
+let snake,food,dir,nextDir,score,timer,running=false,paused=false;
+
+function randomFood(){
+ let p;
+ do{
+  p={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)};
+ }while(snake.some(s=>s.x===p.x&&s.y===p.y));
+ return p;
+}
+function startGame(){
+ saveSettings();showScreen('game');restartGame();
+}
+function restartGame(){
+ clearInterval(timer);
+ snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];
+ dir={x:1,y:0};nextDir={x:1,y:0};
+ score=0;food=randomFood();running=true;paused=false;
+ document.getElementById('score').textContent=score;
+ document.getElementById('overlay').classList.remove('show');
+ loop();draw();
+}
+function loop(){
+ clearInterval(timer);
+ timer=setInterval(tick,Math.max(45,speed-Math.floor(score/50)*8));
+}
+function tick(){
+ if(!running||paused)return;
+ dir=nextDir;
+ const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+ if(head.x<0||head.y<0||head.x>=N||head.y>=N||
+ snake.some((s,i)=>i>0&&s.x===head.x&&s.y===head.y)){
+  endGame();return;
+ }
+ snake.unshift(head);
+ if(head.x===food.x&&head.y===food.y){
+  score+=10;
+  document.getElementById('score').textContent=score;
+  food=randomFood();
+  if(score>best){best=score;localStorage.snakeBest=best;updateBest()}
+  document.getElementById('level').textContent=1+Math.floor(score/50);
+  loop();
+ }else snake.pop();
+ draw();
+}
+function turn(x,y){
+ if(!running||paused)return;
+ if(x===-dir.x&&y===-dir.y)return;
+ nextDir={x,y};
+}
+function draw(){
+ const t=themes[theme];
+ ctx.fillStyle=t.board;ctx.fillRect(0,0,400,400);
+ ctx.fillStyle=t.grid;
+ for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+  ctx.fillRect(i*20,j*20,1,1);
+ }
+ if(food){
+  ctx.fillStyle='#e84343';
+  ctx.fillRect(food.x*20+4,food.y*20+4,12,12);
+  ctx.fillStyle='#6cda62';
+  ctx.fillRect(food.x*20+10,food.y*20+1,4,4);
+ }
+ snake?.forEach((s,i)=>{
+  ctx.fillStyle=snakeColor;
+  ctx.fillRect(s.x*20+2,s.y*20+2,16,16);
+  ctx.fillStyle=i===0?'#ffffff':'#174322';
+  if(i===0){
+   if(dir.x!==0){
+    ctx.fillRect(s.x*20+(dir.x>0?13:4),s.y*20+5,3,3);
+    ctx.fillRect(s.x*20+(dir.x>0?13:4),s.y*20+12,3,3);
+   }else{
+    ctx.fillRect(s.x*20+5,s.y*20+(dir.y>0?13:4),3,3);
+    ctx.fillRect(s.x*20+12,s.y*20+(dir.y>0?13:4),3,3);
+   }
+  }else{
+   ctx.fillRect(s.x*20+5,s.y*20+5,3,3);
+   ctx.fillRect(s.x*20+12,s.y*20+5,3,3);
+  }
+ });
+}
+function endGame(){
+ running=false;clearInterval(timer);
+ document.getElementById('modalTitle').textContent='GAME OVER';
+ document.getElementById('modalText').textContent='YOUR SCORE: '+score;
+ document.getElementById('modalMain').textContent='PLAY AGAIN';
+ document.getElementById('modalMain').onclick=restartGame;
+ document.getElementById('overlay').classList.add('show');
+}
+function pauseGame(){
+ if(!running)return;
+ paused=true;
+ document.getElementById('modalTitle').textContent='PAUSED';
+ document.getElementById('modalText').textContent='GAME PAUSED';
+ document.getElementById('modalMain').textContent='CONTINUE';
+ document.getElementById('modalMain').onclick=resumeGame;
+ document.getElementById('overlay').classList.add('show');
+}
+function resumeGame(){
+ paused=false;
+ document.getElementById('overlay').classList.remove('show');
+}
+function closeGame(){
+ running=false;clearInterval(timer);
+ document.getElementById('overlay').classList.remove('show');
+ showScreen('home');
+}
+let sx=0,sy=0;
+canvas.addEventListener('touchstart',e=>{
+ sx=e.changedTouches[0].clientX;sy=e.changedTouches[0].clientY;
+},{passive:true});
+canvas.addEventListener('touchend',e=>{
+ const dx=e.changedTouches[0].clientX-sx;
+ const dy=e.changedTouches[0].clientY-sy;
+ if(Math.max(Math.abs(dx),Math.abs(dy))<15)return;
+ if(Math.abs(dx)>Math.abs(dy))turn(Math.sign(dx),0);
+ else turn(0,Math.sign(dy));
+},{passive:true});
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowUp')turn(0,-1);
+ if(e.key==='ArrowDown')turn(0,1);
+ if(e.key==='ArrowLeft')turn(-1,0);
+ if(e.key==='ArrowRight')turn(1,0);
+ if(e.key==='Escape')pauseGame();
+});
+document.getElementById('overlay').addEventListener('click',e=>{
+ if(e.target.id==='overlay')resumeGame();
+});
+</script>
+</body>
+</html>
